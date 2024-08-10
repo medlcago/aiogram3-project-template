@@ -1,0 +1,45 @@
+volumes:
+  postgres-data:
+  pgadmin-data:
+
+services:
+  database:
+    container_name: postgres
+    image: postgres:latest
+    restart: always
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+      POSTGRES_DB: ${PG_DB}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data/
+    ports:
+      - "5434:5432"
+
+  tg_bot:
+    container_name: tg-bot
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: >
+      sh -c "
+        poetry run alembic upgrade head &&
+        poetry run python ./src/main.py"
+    depends_on:
+      - database
+
+  pgadmin:
+    container_name: pgadmin4
+    image: dpage/pgadmin4:latest
+    restart: always
+    env_file:
+      - .env
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
